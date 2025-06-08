@@ -27,25 +27,17 @@ This project demonstrates modern DevOps practices by automating the deployment o
 aws configure
 ```
 
+You'll be prompted to enter:
+- AWS Access Key ID
+- AWS Secret Access Key
+- Default region name (e.g., us-west-2)
+- Default output format (press Enter for default)
+
 2. Required AWS permissions:
    - EC2 full access
    - VPC full access
    - IAM role creation
    - Security group management
-
-### Environment Setup
-
-1. Create a `.env` file in the root directory:
-
-```bash
-# Copy the example file
-cp .env.copy .env
-
-# Edit .env with your credentials
-# AWS_ACCESS_KEY_ID=your_access_key
-# AWS_SECRET_ACCESS_KEY=your_secret_key
-# AWS_REGION=your_preferred_region  # e.g., us-west-2, us-east-1, etc.
-```
 
 ## Deployment Options
 
@@ -79,16 +71,7 @@ This repository is configured to automatically deploy when pushed to GitHub.
 
 If you prefer to deploy manually, follow these steps:
 
-1. **Set Environment Variables**
-   Create a `.env` file in the root directory with:
-
-   ```bash
-   AWS_ACCESS_KEY_ID=your_access_key
-   AWS_SECRET_ACCESS_KEY=your_secret_key
-   AWS_REGION=us-west-2
-   ```
-
-2. **Infrastructure Provisioning**
+1. **Infrastructure Provisioning**
 
    ```bash
    cd terraform
@@ -97,7 +80,7 @@ If you prefer to deploy manually, follow these steps:
    terraform apply
    ```
 
-3. **Server Configuration**
+2. **Server Configuration**
    ```bash
    cd ansible
    ansible-playbook -i inventory.yml minecraft.yml
