@@ -1,26 +1,52 @@
 ---
 - name: Configure Minecraft Server
-  hosts: minecraft_servers
+  hosts: all
   become: yes
   vars:
     minecraft_version: "1.20.4"
     minecraft_dir: "/opt/minecraft"
     minecraft_user: "minecraft"
     minecraft_group: "minecraft"
+    minecraft_server_url: "https://piston-data.mojang.com/v1/objects/e6ec2f64e6080b9b5d9b471b291c33cc7f509733/server.jar"
 
   tasks:
-    - name: Update apt cache
-      apt:
+    - name: Update dnf cache
+      dnf:
         update_cache: yes
-        cache_valid_time: 3600
 
     - name: Install required packages
-      apt:
+      dnf:
         name:
-          - openjdk-17-jre-headless
+          - java-21-amazon-corretto-headless
           - screen
           - wget
-          - curl
+          - curl-minimal
+        state: present
+
+    - name: Verify Java package installation
+      shell: rpm -q java-21-amazon-corretto-headless
+      register: java_package
+      changed_when: false
+      failed_when: java_package.rc != 0
+
+    - name: Find Java executable using which
+      shell: which java
+      register: java_which
+      changed_when: false
+      failed_when: java_which.rc != 0
+
+    - name: Set Java path from which
+      set_fact:
+        java_path: "{{ java_which.stdout }}"
+
+    - name: Verify Java installation
+      command: "{{ java_path }} -version"
+      register: java_version
+      changed_when: false
+
+    - name: Create minecraft group
+      group:
+        name: "{{ minecraft_group }}"
         state: present
 
     - name: Create minecraft user
@@ -29,6 +55,7 @@
         group: "{{ minecraft_group }}"
         shell: /bin/bash
         create_home: yes
+        state: present
 
     - name: Create minecraft directory
       file:
@@ -40,7 +67,7 @@
 
     - name: Download Minecraft server
       get_url:
-        url: "https://piston-data.mojang.com/v1/objects/8dd1a28015f51b1803213892b50b7b4fc76e594d/server.jar"
+        url: "{{ minecraft_server_url }}"
         dest: "{{ minecraft_dir }}/server.jar"
         owner: "{{ minecraft_user }}"
         group: "{{ minecraft_group }}"
@@ -48,8 +75,8 @@
 
     - name: Create eula.txt
       copy:
-        content: "eula=true"
         dest: "{{ minecraft_dir }}/eula.txt"
+        content: "eula=true\n"
         owner: "{{ minecraft_user }}"
         group: "{{ minecraft_group }}"
         mode: "0644"
@@ -66,11 +93,18 @@
       template:
         src: minecraft.service.j2
         dest: /etc/systemd/system/minecraft.service
+        owner: root
+        group: root
         mode: "0644"
+      notify:
+        - Reload systemd
 
-    - name: Start and enable Minecraft service
+    - name: Start Minecraft service
       systemd:
         name: minecraft
         state: started
-        enabled: yes
         daemon_reload: yes
+
+  handlers:
+    - name: Reload systemd
+      command: systemctl daemon-reload

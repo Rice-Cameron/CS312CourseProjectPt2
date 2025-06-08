@@ -1,5 +1,6 @@
 provider "aws" {
-  region = var.aws_region
+  region                  = var.aws_region
+  shared_credentials_files = ["~/.aws/credentials"]
 }
 
 # VPC Configuration
@@ -87,9 +88,21 @@ resource "aws_security_group" "minecraft_sg" {
 }
 
 # Create key pair in AWS
+resource "tls_private_key" "minecraft_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
 resource "aws_key_pair" "minecraft_key" {
-  key_name   = "minecraft-key"
-  public_key = var.ssh_public_key
+  key_name   = "minecraft-server-ssh"
+  public_key = tls_private_key.minecraft_key.public_key_openssh
+}
+
+# Save the private key to a file
+resource "local_file" "private_key" {
+  content  = tls_private_key.minecraft_key.private_key_pem
+  filename = "${path.module}/minecraft-server-ssh.pem"
+  file_permission = "0400"
 }
 
 # EC2 Instance

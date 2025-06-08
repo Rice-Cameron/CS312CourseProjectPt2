@@ -33,11 +33,32 @@ You'll be prompted to enter:
 - Default region name (e.g., us-west-2)
 - Default output format (press Enter for default)
 
-2. Required AWS permissions:
+2. For AWS Academy credentials, you may need to manually add the session token:
+   - Open `~/.aws/credentials`
+   - Add `aws_session_token = your_session_token` under the [default] section
+   - The file should look like:
+     ```
+     [default]
+     aws_access_key_id = your_access_key
+     aws_secret_access_key = your_secret_key
+     aws_session_token = your_session_token
+     ```
+
+3. Required AWS permissions:
    - EC2 full access
    - VPC full access
    - IAM role creation
    - Security group management
+
+### SSH Key Pair
+
+The deployment automatically:
+1. Generates a new RSA key pair
+2. Creates the key pair in AWS
+3. Saves the private key as `terraform/minecraft-server-ssh.pem`
+4. Uses the key pair for the EC2 instance
+
+The private key file will be created in the `terraform` directory after running `terraform apply`. Keep this file secure as it's needed to SSH into your Minecraft server.
 
 ## Deployment Options
 
@@ -80,9 +101,15 @@ If you prefer to deploy manually, follow these steps:
    terraform apply
    ```
 
-2. **Server Configuration**
+2. **Get Server IP and Set Environment Variable**
    ```bash
-   cd ansible
+   # Get the server IP from Terraform output
+   export MINECRAFT_SERVER_IP=$(terraform output -raw minecraft_server_ip)
+   ```
+
+3. **Server Configuration**
+   ```bash
+   cd ../ansible
    ansible-playbook -i inventory.yml minecraft.yml
    ```
 
